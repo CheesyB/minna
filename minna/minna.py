@@ -1,11 +1,14 @@
 #!/usr/bin/env python
-
 # -*- coding: utf-8 -*-
 
 import os
 import logging
+import sqlite3
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from zeedl.zeedl_manager import ZeedlManager
+from telegram.error import (TelegramError, Unauthorized, BadRequest, 
+        TimedOut, ChatMigrated, NetworkError)
+from notes import Notes
+
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.DEBUG)
@@ -20,35 +23,46 @@ TOKEN = os.getenv("Minna")
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
     logger.info("start")
-    update.message.reply_text('Hi!')
+    update.message.reply_text(
+            'Hi! Ich bin der Bot:)')
 
 
 def help(update, context):
-    update.message.reply_text('Help!')
-
-def listList(update, context):
-    logger.info("list list")
+    message = "Hallo ich bin der MamuMinnaBot und habe folgende Befehle:\n"\
+            "/start\n/help\n/list\n/addList\n/get\n/del\n/add"
     context.bot.send_message(
-            chat_id=update.effective_chat.id, 
-            text=shoppingList.pretty_print()
-    )
+        chat_id=update.effective_chat.id,
+        text=message)
 
 
-def shoppingListHandler(update, context):
-    shoppingList.add_item(update.message.text)
-
-
-def error(update, context):
-    """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
+def error_callback(update, context):
+    try:
+        raise context.error
+    except Unauthorized as e:
+        logger.warning(e)
+    except BadRequest as e:
+        logger.warning(e)
+    except TimedOut as e:
+        logger.warning(e)
+        # handle slow connection problems
+    except NetworkError as e:
+        logger.warning(e)
+        # handle other connection problems
+    except ChatMigrated as e:
+        logger.warning(e)
+        # the chat_id of a group has changed, use e.new_chat_id instead
+    except TelegramError as e:
+        logger.warning(e)
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=str(e))
 
 
 def main():
+    connection = sqlite3.connect(
+        ':memory:', isolation_level=None, check_same_thread=False)
+    notes = Notes(connection)
 
-    """Start the bot."""
-    # Create the Updater and pass it your bot's token.
-    # Make sure to set use_context=True to use the new context based callbacks
-    # Post version 12 this will no longer be necessary
     updater = Updater(TOKEN, use_context=True)
 
     # Get the dispatcher to register handlers
@@ -57,13 +71,23 @@ def main():
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("list", listList))
+    dp.add_handler(CommandHandler("list", notes.allListHandler))
+    dp.add_handler(CommandHandler("addList", notes.addNewListHandler))
+    dp.add_handler(CommandHandler("delList", notes.deleteListHandler))
+    dp.add_handler(CommandHandler("get", notes.getContentHandler))
+    dp.add_handler(CommandHandler("del", notes.deleteItemsFromListHandler))
+    dp.add_handler(CommandHandler("add", notes.addItemsToListHandler))
+
+
+
+
+   # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
+   #     notes.queryHandler)
 
     # on noncommand i.e message - echo the message on Telegram
-    dp.add_handler(MessageHandler(Filters.text  , shoppingListHandler))
 
     # log all errors
-    dp.add_error_handler(error)
+    dp.add_error_handler(error_callback)
 
     # Start the Bot
     updater.start_polling()
