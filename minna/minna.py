@@ -9,6 +9,7 @@ from telegram.error import (TelegramError, Unauthorized, BadRequest,
                             TimedOut, ChatMigrated, NetworkError)
 from view import View
 from dao import Dao
+from sql_adapter import SqlAdapter
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -62,7 +63,8 @@ def error_callback(update, context):
 def main():
     connection = sqlite3.connect(
         ':memory:', isolation_level=None, check_same_thread=False)
-    dao = Dao(connection)
+    adapter = SqlAdapter(connection)
+    dao = Dao(adapter)
     view = View(dao)
 
     updater = Updater(TOKEN, use_context=True)
@@ -73,12 +75,12 @@ def main():
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("list", view.allListHandler))
-    dp.add_handler(CommandHandler("addList", view.addNewListHandler))
-    dp.add_handler(CommandHandler("delList", view.deleteListHandler))
-    dp.add_handler(CommandHandler("get", view.getContentHandler))
-    dp.add_handler(CommandHandler("del", view.deleteItemsFromListHandler))
-    dp.add_handler(CommandHandler("add", view.addItemsToListHandler))
+    dp.add_handler(CommandHandler("list", view.all_list_handler))
+ #   dp.add_handler(CommandHandler("addList", view.addNewListHandler))
+ #   dp.add_handler(CommandHandler("delList", view.deleteListHandler))
+ #   dp.add_handler(CommandHandler("get", view.getContentHandler))
+ #   dp.add_handler(CommandHandler("del", view.deleteItemsFromListHandler))
+ #   dp.add_handler(CommandHandler("add", view.addItemsToListHandler))
 
    # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
    #     view.queryHandler)
