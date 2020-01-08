@@ -5,9 +5,10 @@ import os
 import logging
 import sqlite3
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from telegram.error import (TelegramError, Unauthorized, BadRequest, 
-        TimedOut, ChatMigrated, NetworkError)
-from notes import Notes
+from telegram.error import (TelegramError, Unauthorized, BadRequest,
+                            TimedOut, ChatMigrated, NetworkError)
+from view import View
+from dao import Dao
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -24,12 +25,12 @@ TOKEN = os.getenv("Minna")
 def start(update, context):
     logger.info("start")
     update.message.reply_text(
-            'Hi! Ich bin der Bot:)')
+        'Hi! Ich bin der Bot:)')
 
 
 def help(update, context):
     message = "Hallo ich bin der MamuMinnaBot und habe folgende Befehle:\n"\
-            "/start\n/help\n/list\n/addList\n/get\n/del\n/add"
+        "/start\n/help\n/list\n/addList\n/get\n/del\n/add"
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=message)
@@ -61,7 +62,8 @@ def error_callback(update, context):
 def main():
     connection = sqlite3.connect(
         ':memory:', isolation_level=None, check_same_thread=False)
-    notes = Notes(connection)
+    dao = Dao(connection)
+    view = View(dao)
 
     updater = Updater(TOKEN, use_context=True)
 
@@ -71,18 +73,15 @@ def main():
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("list", notes.allListHandler))
-    dp.add_handler(CommandHandler("addList", notes.addNewListHandler))
-    dp.add_handler(CommandHandler("delList", notes.deleteListHandler))
-    dp.add_handler(CommandHandler("get", notes.getContentHandler))
-    dp.add_handler(CommandHandler("del", notes.deleteItemsFromListHandler))
-    dp.add_handler(CommandHandler("add", notes.addItemsToListHandler))
-
-
-
+    dp.add_handler(CommandHandler("list", view.allListHandler))
+    dp.add_handler(CommandHandler("addList", view.addNewListHandler))
+    dp.add_handler(CommandHandler("delList", view.deleteListHandler))
+    dp.add_handler(CommandHandler("get", view.getContentHandler))
+    dp.add_handler(CommandHandler("del", view.deleteItemsFromListHandler))
+    dp.add_handler(CommandHandler("add", view.addItemsToListHandler))
 
    # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
-   #     notes.queryHandler)
+   #     view.queryHandler)
 
     # on noncommand i.e message - echo the message on Telegram
 

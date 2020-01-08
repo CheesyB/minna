@@ -15,8 +15,8 @@ class SqlAdapter():
         self.con.text_factory = lambda x: x.decode("utf-8")
         self.c = self.con.cursor()
         self.logger = logging.getLogger(__name__)
-        self.initDB()
-        self.insertStuff()
+        self.init_db()
+        self.insert_stuff()
 
     @property
     def latest_list(self):
@@ -28,7 +28,7 @@ class SqlAdapter():
         return latest_id
 
     @property
-    def allLists(self):
+    def all_lists(self):
         return self.c.execute('''
             SELECT * FROM lists
             ''').fetchall()
@@ -39,7 +39,7 @@ class SqlAdapter():
         WHERE tag = ?''', (tag,)).fetchone()):
             raise Exception("no list with tag {}".format(tag))
 
-    def initDB(self):
+    def init_db(self):
         self.c.execute('''
             CREATE TABLE IF NOT EXISTS lists (
             id INTEGER NOT NULL PRIMARY KEY,
@@ -69,14 +69,13 @@ class SqlAdapter():
                        )
         self.logger.info("created table item_lists")
 
-    def newList(self, tag):
+    def new_list(self, tag):
         self.c.execute(''' INSERT INTO lists (timestamp,tag) values(?,?)''',
                        (time.time(), tag))
         self.logger.info('new list added {}'.format(tag))
 
-    def addItemsToList(self, items, tag):
+    def add_items_to_list(self, items, tag):
         self.check_raise(tag)
-
         for item in items:
             try:
                 self.c.execute('''
@@ -89,7 +88,7 @@ class SqlAdapter():
                 self.logger.info(e)
                 raise e
 
-    def _mapItemToList(self, item, tag):
+    def _map_item_to_list(self, item, tag):
         try:
             self.c.execute('''
                     INSERT INTO items_lists (item, list )
@@ -101,7 +100,7 @@ class SqlAdapter():
             return
         self.logger.info('added {} to {}'.format(item, tag))
 
-    def deleteItemFromList(self, item, tag):
+    def delete_item_from_list(self, item, tag):
         self.check_raise(tag)
         self.c.execute('''
             DELETE FROM items_lists AS il
@@ -111,9 +110,9 @@ class SqlAdapter():
             AND il.list = (
                 SELECT id FROM lists
                 WHERE lists.tag = ?)''', (item, tag))
-        self.logger.info("deleted {} from list {}".format(item,tag))
+        self.logger.info("deleted {} from list {}".format(item, tag))
 
-    def deleteList(self, tag):
+    def delete_list(self, tag):
         self.check_raise(tag)
         self.c.execute('''
             DELETE FROM items_lists AS il
@@ -126,9 +125,7 @@ class SqlAdapter():
             WHERE tag = ?''', (tag,))
         self.logger.info("deleted list {}".format(tag))
 
-
-
-    def getContent(self, tag):
+    def get_content(self, tag):
         self.check_raise(tag)
         return self.c.execute('''
             SELECT i.item FROM items as i
@@ -136,25 +133,30 @@ class SqlAdapter():
             INNER JOIN lists as l ON il.list = l.id
             WHERE l.tag = ? ''', (tag,)).fetchall()
 
-    def insertStuff(self):
+    def insert_stuff(self):
 
         self.newList("tutiuti")
         self.newList("TimTest")
         self.newList("Paris")
         self.newList("Einkauf")
 
-        self.addItemsToList(["Nudeln", "Bohnen", "Gurken", "Tomate"], "TimTest")
-        self.addItemsToList(["Nudeln", "Banane", "Gurken", "Tomate"], "Einkauf")
-        self.addItemsToList(["Nudeln", "Apfel", "Gurken", "Tomate" ], "Paris")
-        self.addItemsToList(["Nudeln", "Nudeln", "Gurken", "Tomate"], "tutiuti")
-        self.addItemsToList(["Tomate", "Makrelen", "Tim", "Tim_Tom"], "Einkauf")
+        self.addItemsToList(
+            ["Nudeln", "Bohnen", "Gurken", "Tomate"], "TimTest")
+        self.addItemsToList(
+            ["Nudeln", "Banane", "Gurken", "Tomate"], "Einkauf")
+        self.addItemsToList(["Nudeln", "Apfel", "Gurken", "Tomate"], "Paris")
+        self.addItemsToList(
+            ["Nudeln", "Nudeln", "Gurken", "Tomate"], "tutiuti")
+        self.addItemsToList(
+            ["Tomate", "Makrelen", "Tim", "Tim_Tom"], "Einkauf")
 
         try:
-            self.addItems(["Nudeln", "Apfel", "Gurken", "Tomate"], "GibtsNicht")
+            self.addItems(
+                ["Nudeln", "Apfel", "Gurken", "Tomate"], "GibtsNicht")
         except Exception as e:
             print(e)
 
-    def getStuff(self):
+    def get_stuff(self):
         print("Items: {}".format(self.c.execute('SELECT * FROM items').fetchall()))
         print("Lists: {}".format(self.c.execute('SELECT * FROM lists').fetchall()))
         result = self.c.execute('''
@@ -171,8 +173,8 @@ if __name__ == "__main__":
                         level=logging.DEBUG)
     connection = sqlite3.connect(':memory:')
     sqlAdaper = SqlAdapter(connection)
-    sqlAdaper.insertStuff()
-    sqlAdaper.getStuff()
-    sqlAdaper.deleteItemFromList("Apfel", 4)
-    print("allLists: {}".format(sqlAdaper.allLists))
+    sqlAdaper.insert_stuff()
+    sqlAdaper.get_stuff()
+    sqlAdaper.delete_item_from_list("Apfel", 4)
+    print("allLists: {}".format(sqlAdaper.all_list))
     print(sqlAdaper.getStuff())

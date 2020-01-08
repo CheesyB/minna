@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from telegram.ext import MessageHandler, Filters
+from telegram.ext import Message, Filters
 from telegram.error import TelegramError
 from sql_adapter import SqlAdapter
 import pprint
@@ -24,13 +24,19 @@ def cpp(liste):
     return result
 
 
-class Notes(object):
+class Dao(object):
 
     def __init__(self, connection):
         self.adapter = SqlAdapter(connection)
         self.logger = logging.getLogger(__name__)
 
-    def allListHandler(self, update, context):
+    def _check_raise_args(self, context, message):
+        if context.args:
+            return context.args
+        else:
+            raise TelegramError(message)
+
+    def all_list(self, update, context):
         allLists = self.adapter.allLists
         if not allLists:
             context.bot.send_message(
@@ -44,35 +50,31 @@ class Notes(object):
             chat_id=update.effective_chat.id,
             text=cpp(filteredList))
 
-    def addNewListHandler(self, update, context):
-        if context.args:
-            tag = context.args[0]
-            self.adapter.newList(tag)
+    def add_new_list(self, update, context):
+        args = self._check_raise_args(context,
+                                    "Wie soll denn die neue Liste heißen?")
+        tag = args[0]
+        self.adapter.newList(tag)
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="neue List {}".format(tag))
+
+    def get_content(self, update, context):
+        args = self._check_raise_args(context,
+                                    "Welche Liste soll ich ausgeben?")
+        try:
+            items = self.adapter.getContent(tag)
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="neue List {}".format(tag))
-        else:
-            raise TelegramError("Wie soll denn die neue Liste heißen?")
+                text=cpp(items))
+        except Exception as e:
+            self.logger.info(" getContent error: {}", e)
+            raise TelegramError('Hups ein Fehler: gibts die '
+                                'Liste {} wirklich?'.format(tag))
 
-    def getContentHandler(self, update, context):
-        if context.args:
-            tag = context.args[0]
-            try:
-                items = self.adapter.getContent(tag)
-                context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=cpp(items))
-                return
-            except Exception as e:
-                self.logger.info(" getContentHandler error: {}", e)
-                raise TelegramError('Hups ein Fehler: gibts die '
-                                    'Liste {} wirklich?'.format(tag))
-        else:
-            raise TelegramError("Welche Liste soll ich ausgeben?")
-
-    def deleteItemsFromListHandler(self, update, context):
+    def delete_items_from_list(self, update, context):
         if not len(context.args) >= 2:
-            raise TelegramError("Zu wenig infos?")
+            raise TelegramError("Zu wenig infos!")
         tag = context.args[0]
         message = 'Gelöscht von {}: '.format(tag)
         for item in context.args[1:]:
@@ -83,7 +85,7 @@ class Notes(object):
             chat_id=update.effective_chat.id,
             text=message)
 
-    def addItemsToListHandler(self, update, context):
+    def add_items_to_list(self, update, context):
         if not len(context.args) >= 2:
             raise TelegramError("Zu wenig infos?")
         tag = context.args[0]
@@ -92,10 +94,10 @@ class Notes(object):
             chat_id=update.effective_chat.id,
             text=cpp(self.adapter.getContent(tag)))
 
-    def deleteListHandler(self, update, context):
-        if not context.args:
-            raise TelegramError("Welche Liste soll ich löschen?")
-        tag = context.args[0]
+    def delete_list(self, update, context):
+        args = self._check_raise_args(context,
+                                    "Welche Liste soll ich löschen?")
+        tag = args[0]
         try:
             self.adapter.deleteList(context.args[0])
         except Exception as e:
