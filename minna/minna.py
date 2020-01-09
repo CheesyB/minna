@@ -75,12 +75,12 @@ def main():
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("list", view.all_list_handler))
- #   dp.add_handler(CommandHandler("addList", view.addNewListHandler))
- #   dp.add_handler(CommandHandler("delList", view.deleteListHandler))
- #   dp.add_handler(CommandHandler("get", view.getContentHandler))
- #   dp.add_handler(CommandHandler("del", view.deleteItemsFromListHandler))
- #   dp.add_handler(CommandHandler("add", view.addItemsToListHandler))
+    dp.add_handler(CommandHandler("list", view.all_lists_handler))
+    dp.add_handler(CommandHandler("addList", view.add_new_list_handler))
+    dp.add_handler(CommandHandler("add", view.add_items_to_list_handler))
+    dp.add_handler(CommandHandler("get", view.get_content_handler))
+    dp.add_handler(CommandHandler("delList", view.delete_list_handler))
+    dp.add_handler(CommandHandler("del", view.delete_items_from_list_handler))
 
    # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
    #     view.queryHandler)

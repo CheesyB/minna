@@ -11,23 +11,52 @@ import logging
 import re
 
 
-def cpp(liste):
-    result = ''
-    for i, row in enumerate(liste):
-        result += '{}. {} \n'.format(i+1, row[0])
-    return result
-
-
 def send(func):
     @functools.wraps(func)
     def wrapper_send(*args, **kwargs):
         message = func(*args, **kwargs)
-        print(args)
         args[2].bot.send_message(
             chat_id=args[1].effective_chat.id,
             text=message)
         return message
     return wrapper_send
+
+
+def tag(func):
+    @functools.wraps(func)
+    def wrapper_tag(*args, **kw):
+        tag = args[0].dao.tag_exists(args[2].args[0])
+        if not tag:
+            raise TelegramError("Wie heißt denn die List?")
+    return wrapper_tag
+
+
+def context_args(arg_count):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper_context_args(*args, **kwargs):
+            if (len(args[2].args) < arg_count):
+                raise TelegramError("Leider zu wenige Argumente")
+            tag = args[2].args[0]
+            command_args = args[2].args[1:]
+            return func(args[0], args[1], args[2], tag, command_args)
+        return wrapper_context_args
+    return decorator
+
+
+def telegram_command(func):
+    @functools.wraps(func)
+    def wrapper_telegram_command(self, *args, **kwargs):
+        kwargs['update'] = args[0]
+        kwargs['context'] = args[1]
+        tag = None
+        command_args = None
+        if(len(args[1].args) > 0):
+            tag = args[1].args[0]
+            if(len(args[1].args) > 1):
+                command_args = args[1].args[1:]
+        return func(self, tag, command_args, **kwargs)
+    return wrapper_telegram_command
 
 
 class View(object):
@@ -39,61 +68,80 @@ class View(object):
     def convert_ts(self, timestamp):
         return datetime.datetime.fromtimestamp(timestamp).strftime('%d.%m.%Y')
 
-    def _check_raise_args(self, args, error_msg):
-        if args:
-            return args
-        else:
-            raise TelegramError(error_msg)
+    def print_column(self, table, column):
+        result = ''
+        for i, row in enumerate(table):
+            result += '{}. {} \n'.format(i+1, row[column])
+        return result
 
     @send
-    def all_list_handler(self, update, context):
+    @telegram_command
+    def all_lists_handler(self, tag, command_args, **kw):
         all_lists = self.dao.all_lists()
-        __import__('ipdb').set_trace()
-        return str(all_lists)
+        return self.print_column(all_lists, 1)
 
-    def add_new_list_handler(self, update, context):
-        args = self._check_raise_args(context.args,
-                                      "Wie soll denn die Liste heißen?")
-        tag = args[0]
-        self.dao.newList(tag)
-        self.send(update, context, "neue List {}".format(tag))
+    @send
+    @telegram_command
+    def add_new_list_handler(self, tag, command_args, **kw):
+        if not tag:
+            raise TelegramError("Keine Liste:(")
+        if self.dao.tag_exists(tag):
+            raise TelegramError("Diese Liste gibt es schon:)")
+        self.dao.new_list(tag)
+        return "neue Liste '{}' erstellt".format(tag)
 
-    def get_content_handler(self, update, context):
-        args = self._check_raise_args(context.args,
-                                      "Welche Liste soll ich ausgeben?")
-        tag = args[0]
-        try:
-            items = self.adapter.getContent(tag)
-            self.send(update, context, cpp(items))
-        except Exception as e:
-            self.logger.info(" getContentHandler error: {}", e)
-            raise TelegramError('Hups ein Fehler: gibts die '
-                                'Liste {} wirklich?'.format(tag))
+    @send
+    @telegram_command
+    def add_items_to_list_handler(self, tag, command_args, **kw):
+        if not tag:
+            raise TelegramError("Zu welcher Liste soll ich die Sachen"
+                                "hinzufügen?")
+        if not self.dao.tag_exists(tag):
+            raise TelegramError("Diese Liste '{}’ finde ich nicht".format(tag))
+        if not command_args:
+            raise TelegramError("Was soll ich denn hinzufügen?")
+        self.dao.add_items_to_list(command_args, tag)
+        return self.print_column(self.dao.get_content(tag), 0)
 
-    def delete_items_from_list_handler(self, update, context):
-        if not len(context.args) >= 2:
-            raise TelegramError("Zu wenig infos?")
-        tag = context.args[0]
-        message = 'Gelöscht von {}: '.format(tag)
-        for item in context.args[1:]:
-            self.dao.deleteItemFromList(item, tag)
-            message += '{} '.format(item)
-        message += '\n {}'.format(cpp(self.adapter.getContent(tag)))
-        self.send(update, context, message)
+    @send
+    @telegram_command
+    def get_content_handler(self, tag, command_args, **kw):
+        if not tag:
+            raise TelegramError("Welche Liste soll ich ausgeben?")
+        if not self.dao.tag_exists(tag):
+            raise TelegramError("Diese Liste '{}’ finde ich nicht".format(tag))
+        items = self.dao.get_content(tag)
+        return self.print_column(items, 0)
 
-    def add_items_to_list_handler(self, update, context):
-        if not len(context.args) >= 2:
-            raise TelegramError("Zu wenig infos?")
-        tag = context.args[0]
-        self.dao.addItemsToList(context.args[1:], tag)
-        self.send(update, context, cpp(self.dao.getContent(tag)))
+    @send
+    @telegram_command
+    def delete_list_handler(self, tag, command_args, **kw):
+        if not tag:
+            raise TelegramError("Welche Liste soll ich löschen?")
+        if not self.dao.tag_exists(tag):
+            raise TelegramError("Diese Liste '{}’ finde ich nicht".format(tag))
+        self.dao.delete_list(tag)
+        return "Liste {} gelöscht".format(tag)
 
-    def delete_list_handler(self, update, context):
-        self._check_raise_args(context.args, "Welche Liste soll ich löschen?")
-        tag = context.args[0]
-        try:
-            self.adapter.deleteList(context.args[0])
-        except Exception as e:
-            raise TelegramError("Die Liste {} gibt es wohl"
-                                "nicht:(".format(tag))
-        self.send(update, context, "Liste {} gelöscht".format(tag))
+    @send
+    @telegram_command
+    def delete_items_from_list_handler(self, tag, command_args, **kw):
+        if not tag:
+            raise TelegramError("Von welcher Liste soll ich löschen?")
+        if not self.dao.tag_exists(tag):
+            raise TelegramError("Diese Liste '{}’ finde ich nicht".format(tag))
+        if not command_args:
+            raise TelegramError("Jetzt habe ich ja gar nix zu löschen:)")
+        save_to_delete = self.dao.items_exist(command_args, tag)
+        for item in save_to_delete:
+            self.dao.delete_item_from_list(item, tag)
+        return "Gelöscht von {}: {}".format(tag, ' '.join(save_to_delete))
+
+        
+
+
+
+
+
+
+

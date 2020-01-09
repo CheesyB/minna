@@ -50,7 +50,7 @@ class SqlAdapter():
             CREATE TABLE IF NOT EXISTS items_lists (
             item INT NOT NULL,
             list INT NOT NULL,
-            UNIQUE(item, list) ON CONFLICT ABORT
+            UNIQUE(item, list) ON CONFLICT IGNORE
             FOREIGN KEY(item) REFERENCES items(id),
             FOREIGN KEY(list) REFERENCES lists(id)
             ); '''
