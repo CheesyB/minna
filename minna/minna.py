@@ -18,7 +18,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-TOKEN = os.getenv("Minna")
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -61,6 +60,8 @@ def error_callback(update, context):
 
 
 def main():
+    __import__('ipdb').set_trace()
+    TOKEN = os.getenv("TOKEN")
     connection = sqlite3.connect(
         ':memory:', isolation_level=None, check_same_thread=False)
     adapter = SqlAdapter(connection)
