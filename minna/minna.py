@@ -60,10 +60,10 @@ def error_callback(update, context):
 
 
 def main():
-    __import__('ipdb').set_trace()
     TOKEN = os.getenv("TOKEN")
+    CONNECTION = os.getenv("CONNECTION")
     connection = sqlite3.connect(
-        ':memory:', isolation_level=None, check_same_thread=False)
+        CONNECTION, isolation_level=None, check_same_thread=False)
     adapter = SqlAdapter(connection)
     dao = Dao(adapter)
     view = View(dao)
