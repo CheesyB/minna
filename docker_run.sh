@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-docker run --rm -it \
+docker run --rm -d \
   --name mamuminna \
   --env TOKEN=$TOKEN \
   --env CONNECTION=$CONNECTION \
