@@ -137,7 +137,33 @@ class View(object):
             self.dao.delete_item_from_list(item, tag)
         return "Gelöscht von {}: {}".format(tag, ' '.join(save_to_delete))
 
-        
+    @send
+    @telegram_command
+    def add_sentence_to_list_handler(self, tag, command_args, **kw):
+        if not tag:
+            raise TelegramError("Zu welcher Liste soll ich das TODO"
+                                "hinzufügen?")
+        if not self.dao.tag_exists(tag):
+            raise TelegramError("Diese Liste '{}’ finde ich nicht".format(tag))
+        if not command_args:
+            raise TelegramError("Was soll ich denn hinzufügen?")
+        item = ' '.join(command_args)
+        self.dao.add_item_to_list(item, tag)
+        return "TODO '{}' zu '{}' hinzugefügt! Frohes schaffen:)".format(item, tag)
+
+    @send
+    @telegram_command
+    def delete_sentence_from_list_handler(self, tag, command_args, **kw):
+        if not tag:
+            raise TelegramError("Von welcher Liste soll ich löschen?")
+        if not self.dao.tag_exists(tag):
+            raise TelegramError("Diese Liste '{}’ finde ich nicht".format(tag))
+        if not command_args:
+            raise TelegramError("Jetzt habe ich ja gar nix zu löschen:)")
+        item = ' '.join(command_args)
+        self.dao.delete_item_from_list(item, tag)
+        return "TODO '{}' von '{}' gelöscht! Super:)".format(item, tag)
+
 
 
 

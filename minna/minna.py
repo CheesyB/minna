@@ -81,6 +81,8 @@ def main():
     dp.add_handler(CommandHandler("get", view.get_content_handler))
     dp.add_handler(CommandHandler("delList", view.delete_list_handler))
     dp.add_handler(CommandHandler("del", view.delete_items_from_list_handler))
+    dp.add_handler(CommandHandler("todo", view.add_sentence_to_list_handler))
+    dp.add_handler(CommandHandler("deltodo", view.delete_sentence_from_list_handler))
 
    # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
    #     view.queryHandler)

@@ -54,3 +54,4 @@ class Dao(object):
         __import__('ipdb').set_trace()
         return set(items_in_db) & set(items_to_delete)
 
+
