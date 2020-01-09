@@ -5,5 +5,5 @@ docker run --rm -d \
   --env TOKEN=$TOKEN \
   --env CONNECTION=$CONNECTION \
   --mount source=sql_persistance,target=/persistance \
-  mamuminna:latest /bin/bash
+  mamuminna:latest 
 
