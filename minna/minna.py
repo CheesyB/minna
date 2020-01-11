@@ -12,11 +12,19 @@ from dao import Dao
 from sql_adapter import SqlAdapter
 
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
+LOGPATH = os.getenv("LOGPATH")
+LOGNAME = os.getenv("LOGNAME")
 
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(levelname)-5.5s: %(message)s")
 logger = logging.getLogger(__name__)
 
+fileHandler = logging.FileHandler("{0}/{1}.log".format(LOGPATH, LOGNAME))
+fileHandler.setFormatter(logFormatter)
+logger.addHandler(fileHandler)
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+logger.addHandler(consoleHandler)
 
 
 
@@ -85,8 +93,8 @@ def main():
     dp.add_handler(CommandHandler("todo", view.add_sentence_to_list_handler))
     dp.add_handler(CommandHandler("deltodo", view.delete_sentence_from_list_handler))
 
-   # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
-   #     view.queryHandler)
+    # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
+    #     view.queryHandler)
 
     # on noncommand i.e message - echo the message on Telegram
 
