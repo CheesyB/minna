@@ -13,7 +13,7 @@ class Dao(object):
 
     def __init__(self, sqlAdapter):
         self.adapter = sqlAdapter
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("minna.dao")
 
     def tag_exists(self, tag):
         return self.adapter.tag_exists(tag)
@@ -41,8 +41,7 @@ class Dao(object):
         for item in items:
             if item in items:
                 self.adapter.delete_item_from_list(item, tag)
-
-
+    
     def delete_item_from_list(self, item, tag):
         self.adapter.delete_item_from_list(item, tag)
 
@@ -51,7 +50,6 @@ class Dao(object):
 
     def items_exist(self, items_to_delete, tag):
         items_in_db = [i[0] for i in self.adapter.get_content(tag)]
-        __import__('ipdb').set_trace()
         return set(items_in_db) & set(items_to_delete)
 
 

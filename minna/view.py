@@ -62,7 +62,7 @@ def telegram_command(func):
 class View(object):
 
     def __init__(self, dao):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("minna.view")
         self.dao = dao
 
     def convert_ts(self, timestamp):

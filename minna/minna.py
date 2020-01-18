@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 import logging
 import sqlite3
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -10,28 +9,37 @@ from telegram.error import (TelegramError, Unauthorized, BadRequest,
 from view import View
 from dao import Dao
 from sql_adapter import SqlAdapter
+from config import Config
 
 
-LOGPATH = os.getenv("LOGPATH")
-LOGNAME = os.getenv("LOGNAME")
+conf = Config()
 
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(levelname)-5.5s: %(message)s")
-logger = logging.getLogger(__name__)
 
-fileHandler = logging.FileHandler("{0}/{1}.log".format(LOGPATH, LOGNAME))
-fileHandler.setFormatter(logFormatter)
-logger.addHandler(fileHandler)
+def setUpLogging():
+    logger = logging.getLogger("minna")
+    logger.setLevel(logging.INFO)
 
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-logger.addHandler(consoleHandler)
+    logFormatter = logging.Formatter(
+        "%(asctime)s %(levelname)s %(name)s: %(message)s")
+    fileHandler = logging.FileHandler("{0}/{1}".format(
+        conf.config['LOGPATH'],
+        conf.config['LOGNAME']))
+    fileHandler.setFormatter(logFormatter)
+    fileHandler.setLevel(logging.INFO)
+    logger.addHandler(fileHandler)
 
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(logFormatter)
+    consoleHandler.setLevel(logging.INFO)
+    logger.addHandler(consoleHandler)
 
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
+    logger = logging.getLogger("minna.start")
     logger.info("start")
+    
     update.message.reply_text(
         'Hi! Ich bin der Bot:)')
 
@@ -45,6 +53,7 @@ def help(update, context):
 
 
 def error_callback(update, context):
+    logger = logging.getLogger("minna.tele_error")
     try:
         raise context.error
     except Unauthorized as e:
@@ -68,8 +77,12 @@ def error_callback(update, context):
 
 
 def main():
-    TOKEN = os.getenv("TOKEN")
-    CONNECTION = os.getenv("CONNECTION")
+    setUpLogging()
+    logger = logging.getLogger("minna")
+    logger.info("started MinnaMamuBot")
+
+    TOKEN = conf.config['TOKEN']
+    CONNECTION = conf.config['CONNECTION']
     connection = sqlite3.connect(
         CONNECTION, isolation_level=None, check_same_thread=False)
     adapter = SqlAdapter(connection)
@@ -91,7 +104,8 @@ def main():
     dp.add_handler(CommandHandler("delList", view.delete_list_handler))
     dp.add_handler(CommandHandler("del", view.delete_items_from_list_handler))
     dp.add_handler(CommandHandler("todo", view.add_sentence_to_list_handler))
-    dp.add_handler(CommandHandler("deltodo", view.delete_sentence_from_list_handler))
+    dp.add_handler(CommandHandler(
+        "deltodo", view.delete_sentence_from_list_handler))
 
     # dp.add_handler(MessageHandler(Filter.regex(re.compile(r'^#',)),
     #     view.queryHandler)

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-
-
 import sqlite3
 import logging
 import time
+from config import Config
 
 
 class SqlAdapter():
@@ -11,10 +10,11 @@ class SqlAdapter():
     """Docstring for SqlAdapter. """
 
     def __init__(self, connection):
+        self.conf = Config()
         self.con = connection
         self.con.text_factory = lambda x: x.decode("utf-8")
         self.c = self.con.cursor()
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("minna.sql_adapter")
         self.init_db()
 
     def all_lists(self):
