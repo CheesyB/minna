@@ -3,8 +3,6 @@
 
 from telegram.error import TelegramError
 
-import pprint
-import datetime
 import logging
 import re
 
@@ -46,6 +44,7 @@ class Dao(object):
         self.adapter.delete_item_from_list(item, tag)
 
     def delete_list(self, tag):
+        self.adapter.delete_mapping(tag)
         self.adapter.delete_list(tag)
 
     def items_exist(self, items_to_delete, tag):

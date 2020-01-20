@@ -3,6 +3,8 @@
 
 from telegram.ext import MessageHandler, Filters
 from telegram.error import TelegramError
+from telegram.error import (TelegramError, Unauthorized, BadRequest,
+                            TimedOut, ChatMigrated, NetworkError)
 from dao import Dao
 import pprint
 import functools
@@ -165,6 +167,34 @@ class View(object):
         return "TODO '{}' von '{}' gelöscht! Super:)".format(item, tag)
 
 
+    @send
+    def error_callback(self, update, context):
+        logger = logging.getLogger("minna.tele_error")
+        try:
+            raise context.error
+        except Unauthorized as e:
+            logger.warning(e)
+            return "Unauthorized - " + str(e)
+
+        except BadRequest as e:
+            logger.warning(e)
+            return "BadRequest - " + str(e)
+
+        except TimedOut as e:
+            logger.warning(e)
+            return "TimedOut - " + str(e)
+
+        except NetworkError as e:
+            logger.warning(e)
+            return "NetworkError - " + str(e)
+
+        except ChatMigrated as e:
+            logger.warning(e)
+            return "ChatMigrated - " + str(e)
+        
+        except TelegramError as e:
+            logger.warning(e)
+            return "TeleError - " + str(e)
 
 
 

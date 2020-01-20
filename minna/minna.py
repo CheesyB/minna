@@ -4,8 +4,6 @@
 import logging
 import sqlite3
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from telegram.error import (TelegramError, Unauthorized, BadRequest,
-                            TimedOut, ChatMigrated, NetworkError)
 from view import View
 from dao import Dao
 from sql_adapter import SqlAdapter
@@ -39,7 +37,6 @@ def setUpLogging():
 def start(update, context):
     logger = logging.getLogger("minna.start")
     logger.info("start")
-    
     update.message.reply_text(
         'Hi! Ich bin der Bot:)')
 
@@ -52,28 +49,6 @@ def help(update, context):
         text=message)
 
 
-def error_callback(update, context):
-    logger = logging.getLogger("minna.tele_error")
-    try:
-        raise context.error
-    except Unauthorized as e:
-        logger.warning(e)
-    except BadRequest as e:
-        logger.warning(e)
-    except TimedOut as e:
-        logger.warning(e)
-        # handle slow connection problems
-    except NetworkError as e:
-        logger.warning(e)
-        # handle other connection problems
-    except ChatMigrated as e:
-        logger.warning(e)
-        # the chat_id of a group has changed, use e.new_chat_id instead
-    except TelegramError as e:
-        logger.warning(e)
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=str(e))
 
 
 def main():
@@ -113,7 +88,7 @@ def main():
     # on noncommand i.e message - echo the message on Telegram
 
     # log all errors
-    dp.add_error_handler(error_callback)
+    dp.add_error_handler(view.error_callback)
 
     # Start the Bot
     updater.start_polling()
